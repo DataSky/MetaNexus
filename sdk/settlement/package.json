@@ -1,0 +1,15 @@
+{
+  "name": "@metanexus/settlement",
+  "version": "0.1.0",
+  "description": "MetaNexus settlement module",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@metanexus/core": "file:../core"
+  }
+}

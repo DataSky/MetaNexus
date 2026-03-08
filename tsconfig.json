@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": false
+  },
+  "references": [
+    { "path": "sdk/core" },
+    { "path": "sdk/discovery" },
+    { "path": "sdk/trust" },
+    { "path": "sdk/settlement" },
+    { "path": "sdk/adapters" }
+  ]
+}
