@@ -289,3 +289,18 @@ export function validateTaskOffer(data: unknown) {
 export function validateQuotaCertificate(data: unknown) {
   return QuotaCertificateSchema.safeParse(data);
 }
+
+// ============================================================================
+// Lenient registration schema
+// Accepts externally imported cards (from crawlers) that may have no
+// ed25519 key/signature. Signature verification is handled separately.
+// ============================================================================
+
+export const RegisterAgentCardSchema = UniversalAgentCardSchema.extend({
+  id: z.string().min(1),
+  publicKey: z.string(),   // '' for imported cards
+  signature: z.string(),   // '' for imported cards
+  endpoint: z.string().min(1),
+});
+
+export type RegisterAgentCard = z.infer<typeof RegisterAgentCardSchema>;

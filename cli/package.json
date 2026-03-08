@@ -1,0 +1,21 @@
+{
+  "name": "metanexus",
+  "version": "0.1.0",
+  "description": "MetaNexus CLI — search and crawl agents",
+  "type": "module",
+  "bin": {
+    "metanexus": "./src/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
