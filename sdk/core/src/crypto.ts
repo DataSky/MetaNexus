@@ -10,8 +10,8 @@ const subtle = webcrypto.subtle;
 // ─── Key Generation ─────────────────────────────────────────────────────────
 
 export interface KeyPair {
-  publicKey: string;   // base64
-  privateKey: string;  // base64
+  publicKey: string;   // base64 (raw 32 bytes)
+  privateKey: string;  // base64 (PKCS8 DER)
 }
 
 /**
@@ -21,28 +21,34 @@ export async function generateKeyPair(): Promise<KeyPair> {
   const pair = await subtle.generateKey('Ed25519', true, ['sign', 'verify']);
 
   const publicKeyRaw = await subtle.exportKey('raw', pair.publicKey);
-  const privateKeyRaw = await subtle.exportKey('pkcs8', pair.privateKey);
+  const privateKeyPkcs8 = await subtle.exportKey('pkcs8', pair.privateKey);
 
   return {
-    publicKey: bufferToBase64(publicKeyRaw),
-    privateKey: bufferToBase64(privateKeyRaw),
+    publicKey: Buffer.from(publicKeyRaw).toString('base64'),
+    privateKey: Buffer.from(privateKeyPkcs8).toString('base64'),
   };
 }
 
 // ─── Signing ────────────────────────────────────────────────────────────────
 
 /**
- * Sign data with an ed25519 private key.
+ * Sign data with an ed25519 private key (PKCS8 base64).
  * Returns "ed25519:<base64url>" format.
  */
 export async function sign(data: string | Uint8Array, privateKeyBase64: string): Promise<string> {
-  const keyData = base64ToBuffer(privateKeyBase64);
-  const key = await subtle.importKey('pkcs8', keyData, 'Ed25519', false, ['sign']);
+  const keyBytes = Buffer.from(privateKeyBase64, 'base64');
+  const key = await subtle.importKey(
+    'pkcs8',
+    keyBytes,
+    'Ed25519',
+    false,
+    ['sign'],
+  );
 
   const message = typeof data === 'string' ? new TextEncoder().encode(data) : data;
   const signature = await subtle.sign('Ed25519', key, message);
 
-  return `ed25519:${bufferToBase64url(signature)}`;
+  return `ed25519:${Buffer.from(signature).toString('base64url')}`;
 }
 
 /**
@@ -59,11 +65,17 @@ export async function verify(
   }
 
   try {
-    const keyData = base64ToBuffer(publicKeyBase64);
-    const key = await subtle.importKey('raw', keyData, 'Ed25519', false, ['verify']);
+    const keyBytes = Buffer.from(publicKeyBase64, 'base64');
+    const key = await subtle.importKey(
+      'raw',
+      keyBytes,
+      'Ed25519',
+      false,
+      ['verify'],
+    );
 
     const message = typeof data === 'string' ? new TextEncoder().encode(data) : data;
-    const sigBytes = base64urlToBuffer(sigParts[1]);
+    const sigBytes = Buffer.from(sigParts[1], 'base64url');
 
     return subtle.verify('Ed25519', key, sigBytes, message);
   } catch {
@@ -131,22 +143,4 @@ export async function verifyCard(card: UniversalAgentCard): Promise<boolean> {
   if (!card.signature || !card.publicKey) return false;
   const canonical = canonicalize(card as unknown as Record<string, unknown>);
   return verify(canonical, card.signature, card.publicKey);
-}
-
-// ─── Encoding Utilities ─────────────────────────────────────────────────────
-
-function bufferToBase64(buf: ArrayBuffer): string {
-  return Buffer.from(buf).toString('base64');
-}
-
-function bufferToBase64url(buf: ArrayBuffer): string {
-  return Buffer.from(buf).toString('base64url');
-}
-
-function base64ToBuffer(b64: string): ArrayBuffer {
-  return Buffer.from(b64, 'base64').buffer as ArrayBuffer;
-}
-
-function base64urlToBuffer(b64url: string): ArrayBuffer {
-  return Buffer.from(b64url, 'base64url').buffer as ArrayBuffer;
 }

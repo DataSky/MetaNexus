@@ -3,3 +3,12 @@ node_modules/
 dist/
 *.log
 .DS_Store
+
+# Build
+dist/
+
+# Dependencies
+node_modules/
+package-lock.json
+node_modules/
+package-lock.json
