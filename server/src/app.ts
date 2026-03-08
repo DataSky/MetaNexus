@@ -6,6 +6,8 @@
 import { Hono } from 'hono';
 import { AgentRegistry } from '../../sdk/src/discovery/registry.js';
 import { Crawler } from '../../sdk/src/discovery/crawler.js';
+import { getEmbedding } from '../../sdk/src/discovery/embeddings.js';
+import { probeAndScore } from '../../sdk/src/discovery/trust.js';
 import { RegisterAgentCardSchema } from '../../sdk/src/core/validation.js';
 import type { SearchQuery } from '../../sdk/src/core/types.js';
 
@@ -58,16 +60,33 @@ export function createApp(registry = new AgentRegistry()) {
     return c.json({ status: 'deleted' });
   });
 
+  // ---- Trust -----------------------------------------------------------------
+
+  /** Probe an agent's endpoint and return its computed trust score */
+  app.get('/v1/agents/:id/trust', async c => {
+    const id = decodeURIComponent(c.req.param('id'));
+    const card = registry.get(id);
+    if (!card) return c.json({ error: 'Agent not found' }, 404);
+
+    const trustScore = await probeAndScore(card);
+    // Write back into the card for future searches
+    registry.register({ ...card, trust: { ...trustScore, totalTransactions: 0, disputeRate: 0 } });
+
+    return c.json({ agentId: id, ...trustScore });
+  });
+
   // ---- Search ----------------------------------------------------------------
 
-  /** Semantic search (Phase 1: keyword; Phase 2: pgvector) */
+  /** Semantic search: embeds query if DMXAPI_KEY is set, falls back to keyword. */
   app.post('/v1/search', async c => {
     const body = (await c.req.json()) as SearchQuery;
     if (!body.query || typeof body.query !== 'string') {
       return c.json({ error: 'query is required' }, 400);
     }
-    const results = registry.search(body);
-    return c.json({ results, total: results.length });
+    // Best-effort: compute query embedding for semantic search
+    const queryEmbedding = await getEmbedding(body.query);
+    const results = registry.search(body, queryEmbedding);
+    return c.json({ results, total: results.length, semantic: !!queryEmbedding });
   });
 
   // ---- Crawler ---------------------------------------------------------------

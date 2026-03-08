@@ -3,6 +3,13 @@ import { createApp } from './app.js';
 import { AgentRegistry } from '../../sdk/src/discovery/registry.js';
 import type { UniversalAgentCard } from '../../sdk/src/core/types.js';
 
+// Disable real DMXAPI calls in all server tests — use keyword search only.
+vi.mock('../../sdk/src/discovery/embeddings.js', () => ({
+  getEmbedding: vi.fn().mockResolvedValue(null),
+  cardToText: (card: UniversalAgentCard) => `${card.name} ${card.description}`,
+  cosine: () => 0,
+}));
+
 // ---- Fixture -----------------------------------------------------------------
 
 /**
