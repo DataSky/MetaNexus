@@ -8,10 +8,12 @@ import { AgentRegistry } from '../../sdk/src/discovery/registry.js';
 import { Crawler } from '../../sdk/src/discovery/crawler.js';
 import { getEmbedding } from '../../sdk/src/discovery/embeddings.js';
 import { probeAndScore } from '../../sdk/src/discovery/trust.js';
+import { DelegationStore } from '../../sdk/src/delegation/store.js';
 import { RegisterAgentCardSchema } from '../../sdk/src/core/validation.js';
-import type { SearchQuery } from '../../sdk/src/core/types.js';
+import { TaskIntentSchema, TaskOfferSchema } from '../../sdk/src/core/validation.js';
+import type { SearchQuery, ExecutionStatus } from '../../sdk/src/core/types.js';
 
-export function createApp(registry = new AgentRegistry()) {
+export function createApp(registry = new AgentRegistry(), delegation = new DelegationStore()) {
   const app = new Hono();
   const crawler = new Crawler();
 
@@ -122,6 +124,105 @@ export function createApp(registry = new AgentRegistry()) {
         durationMs: r.durationMs,
       })),
     });
+  });
+
+  // ---- Delegation: Intents ---------------------------------------------------
+
+  /** Submit a TaskIntent (client agent looking for a provider) */
+  app.post('/v1/intents', async c => {
+    const body = await c.req.json();
+    const result = TaskIntentSchema.safeParse(body);
+    if (!result.success) {
+      return c.json({ error: 'Invalid TaskIntent', details: result.error.flatten() }, 400);
+    }
+    const record = delegation.intents.submit(result.data);
+    return c.json({ intentId: result.data.intentId, status: record.status }, 201);
+  });
+
+  /** Get an intent with its offers */
+  app.get('/v1/intents/:id', c => {
+    const record = delegation.intents.get(c.req.param('id'));
+    if (!record) return c.json({ error: 'Intent not found' }, 404);
+    return c.json(record);
+  });
+
+  /** Cancel an open intent */
+  app.delete('/v1/intents/:id', c => {
+    const record = delegation.intents.get(c.req.param('id'));
+    if (!record) return c.json({ error: 'Intent not found' }, 404);
+    if (record.status !== 'open') {
+      return c.json({ error: `Cannot cancel intent in status: ${record.status}` }, 409);
+    }
+    delegation.intents.cancel(c.req.param('id'));
+    return c.json({ status: 'cancelled' });
+  });
+
+  // ---- Delegation: Offers ----------------------------------------------------
+
+  /** Provider submits an offer for an open intent */
+  app.post('/v1/intents/:id/offers', async c => {
+    const intentId = c.req.param('id');
+    const record = delegation.intents.get(intentId);
+    if (!record) return c.json({ error: 'Intent not found' }, 404);
+    if (record.status !== 'open') {
+      return c.json({ error: `Intent is not open (status: ${record.status})` }, 409);
+    }
+
+    const body = await c.req.json();
+    const result = TaskOfferSchema.safeParse(body);
+    if (!result.success) {
+      return c.json({ error: 'Invalid TaskOffer', details: result.error.flatten() }, 400);
+    }
+    if (result.data.intentId !== intentId) {
+      return c.json({ error: 'Offer intentId does not match' }, 400);
+    }
+
+    delegation.offers.add(result.data);
+    delegation.intents.addOffer(intentId, result.data);
+    return c.json({ offerId: result.data.offerId, status: 'submitted' }, 201);
+  });
+
+  /** Get a single offer */
+  app.get('/v1/offers/:id', c => {
+    const offer = delegation.offers.get(c.req.param('id'));
+    if (!offer) return c.json({ error: 'Offer not found' }, 404);
+    return c.json(offer);
+  });
+
+  /** Accept an offer → creates a TaskExecution */
+  app.post('/v1/offers/:id/accept', c => {
+    try {
+      const execution = delegation.acceptOffer(c.req.param('id'));
+      return c.json({ executionId: execution.executionId, status: execution.status }, 201);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const status = msg.includes('not found') ? 404 : 409;
+      return c.json({ error: msg }, status);
+    }
+  });
+
+  // ---- Delegation: Executions ------------------------------------------------
+
+  /** Get execution status */
+  app.get('/v1/executions/:id', c => {
+    const execution = delegation.executions.get(c.req.param('id'));
+    if (!execution) return c.json({ error: 'Execution not found' }, 404);
+    return c.json(execution);
+  });
+
+  /** Update execution status (provider reports progress/completion) */
+  app.patch('/v1/executions/:id', async c => {
+    const body = (await c.req.json()) as { status: ExecutionStatus; result?: unknown; clientRating?: number };
+    if (!body.status) return c.json({ error: 'status is required' }, 400);
+
+    try {
+      const execution = delegation.executions.update(c.req.param('id'), body);
+      return c.json(execution);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const status = msg.includes('not found') ? 404 : 409;
+      return c.json({ error: msg }, status);
+    }
   });
 
   return app;
