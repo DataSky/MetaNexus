@@ -14,6 +14,7 @@ import { AgentRegistry } from '../../sdk/src/discovery/registry.js';
 import { createApp } from '../../server/src/app.js';
 import { serve } from '@hono/node-server';
 import { readFileSync } from 'node:fs';
+import { createSOTAIndex, formatSwapQuote, quoteSwap } from '../../sdk/src/settlement/index.js';
 
 const [, , command, ...args] = process.argv;
 
@@ -27,6 +28,9 @@ async function main() {
       break;
     case 'serve':
       await cmdServe(args);
+      break;
+    case 'swap':
+      await cmdSwap(args);
       break;
     default:
       printHelp();
@@ -131,6 +135,84 @@ async function cmdServe(args: string[]) {
   });
 }
 
+
+// ---- swap --------------------------------------------------------------------
+
+async function cmdSwap(args: string[]) {
+  const subcommand = args[0] ?? 'demo';
+  const index = createSOTAIndex();
+
+  if (subcommand === 'index') {
+    console.log('\nMetaNexus SOTA Index (MVP)\n');
+    for (const model of index.models.sort((a, b) => b.indexPrice - a.indexPrice)) {
+      console.log(`${model.model.padEnd(22)} ${model.tier.padEnd(8)} $${model.indexPrice.toFixed(4)}/M tokens  utilization=${(model.utilizationRate * 100).toFixed(0)}%`);
+    }
+    return;
+  }
+
+  if (subcommand === 'quote') {
+    const from = parseRequiredAssetArg(args[1], 'from');
+    const to = parseOptionalAssetArg(args[2], 'to');
+    const quote = quoteSwap(index, { from, to });
+    console.log('\n' + formatSwapQuote(quote) + '\n');
+    return;
+  }
+
+  if (subcommand === 'demo') {
+    const quote = quoteSwap(index, {
+      from: { model: 'claude-sonnet-4.6', tokens: 2_000_000 },
+      to: { model: 'gemini-flash' },
+    });
+    console.log('\nModel Quota Swap Demo\n');
+    console.log('Agent A has: 2,000,000 Claude Sonnet 4.6 tokens');
+    console.log('Agent A needs: Gemini Flash bulk-classification quota');
+    console.log('MetaNexus quote:\n');
+    console.log(formatSwapQuote(quote));
+    console.log('');
+    return;
+  }
+
+  console.error('Usage: metanexus swap [demo|index|quote <model:tokens> <model[:tokens]>]');
+  process.exit(1);
+}
+
+function parseRequiredAssetArg(raw: string | undefined, label: string): { model: string; tokens: number } {
+  const parsed = parseOptionalAssetArg(raw, label);
+  if (parsed.tokens === undefined) {
+    console.error(`Missing token amount for ${label}. Expected model:tokens, e.g. claude-sonnet-4.6:2M`);
+    process.exit(1);
+  }
+  return { model: parsed.model, tokens: parsed.tokens };
+}
+
+function parseOptionalAssetArg(raw: string | undefined, label: string): { model: string; tokens?: number } {
+  if (!raw) {
+    console.error(`Missing ${label} asset. Expected model:tokens, e.g. claude-sonnet-4.6:2M`);
+    process.exit(1);
+  }
+  const [model, tokenText] = raw.split(':');
+  if (!model) {
+    console.error(`Invalid ${label} asset: ${raw}`);
+    process.exit(1);
+  }
+  if (!tokenText) return { model };
+  return { model, tokens: parseTokenAmount(tokenText) };
+}
+
+function parseTokenAmount(raw: string): number {
+  const text = raw.trim().toLowerCase();
+  const match = text.match(/^(\d+(?:\.\d+)?)([mk])?$/);
+  if (!match) {
+    console.error(`Invalid token amount: ${raw}. Use forms like 2M, 500K, 1000000.`);
+    process.exit(1);
+  }
+  const value = Number(match[1]);
+  const suffix = match[2];
+  if (suffix === 'm') return Math.floor(value * 1_000_000);
+  if (suffix === 'k') return Math.floor(value * 1_000);
+  return Math.floor(value);
+}
+
 // ---- helpers -----------------------------------------------------------------
 
 function env(key: string, fallback: string): string {
@@ -146,6 +228,9 @@ Commands:
   crawl <url> [url ...]   Crawl one or more agent URLs
   crawl --file urls.txt   Crawl URLs from a file
   serve [port]            Start the Registry API server
+  swap demo               Show Model Quota Swap demo
+  swap index              Print SOTA Index MVP prices
+  swap quote A:2M B       Quote a model quota swap
 
 Environment:
   METANEXUS_API           API base URL (default: http://localhost:3000)

@@ -59,7 +59,6 @@ export class IntentBuilder {
       deadline: params.deadline,
       nonce: generateNonce(),
       timestamp: now,
-      signature: '',
     };
 
     const signature = sign(intent as Record<string, unknown>, this.config.secretKey);

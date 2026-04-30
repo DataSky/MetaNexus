@@ -18,10 +18,13 @@ export interface KeyPair {
  * Generate a new ed25519 key pair for agent identity.
  */
 export async function generateKeyPair(): Promise<KeyPair> {
-  const pair = await subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+  const key = await subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+  if (!('publicKey' in key) || !('privateKey' in key)) {
+    throw new Error('Expected Ed25519 CryptoKeyPair');
+  }
 
-  const publicKeyRaw = await subtle.exportKey('raw', pair.publicKey);
-  const privateKeyPkcs8 = await subtle.exportKey('pkcs8', pair.privateKey);
+  const publicKeyRaw = await subtle.exportKey('raw', key.publicKey);
+  const privateKeyPkcs8 = await subtle.exportKey('pkcs8', key.privateKey);
 
   return {
     publicKey: Buffer.from(publicKeyRaw).toString('base64'),
@@ -45,7 +48,7 @@ export async function sign(data: string | Uint8Array, privateKeyBase64: string):
     ['sign'],
   );
 
-  const message = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+  const message = toArrayBuffer(typeof data === 'string' ? new TextEncoder().encode(data) : data);
   const signature = await subtle.sign('Ed25519', key, message);
 
   return `ed25519:${Buffer.from(signature).toString('base64url')}`;
@@ -74,13 +77,17 @@ export async function verify(
       ['verify'],
     );
 
-    const message = typeof data === 'string' ? new TextEncoder().encode(data) : data;
-    const sigBytes = Buffer.from(sigParts[1], 'base64url');
+    const message = toArrayBuffer(typeof data === 'string' ? new TextEncoder().encode(data) : data);
+    const sigBytes = toArrayBuffer(Buffer.from(sigParts[1], 'base64url'));
 
     return subtle.verify('Ed25519', key, sigBytes, message);
   } catch {
     return false;
   }
+}
+
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
 // ─── Canonical JSON ─────────────────────────────────────────────────────────

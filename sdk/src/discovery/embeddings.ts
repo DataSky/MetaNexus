@@ -42,8 +42,9 @@ export async function getEmbedding(text: string): Promise<number[] | null> {
       throw new Error(`DMXAPI ${resp.status}: ${body.slice(0, 200)}`);
     }
 
-    const data = await resp.json() as { data: Array<{ embedding: number[] }> };
-    return data.data[0].embedding;
+    const data = await resp.json() as { data?: Array<{ embedding?: number[] }> };
+    const embedding = data.data?.[0]?.embedding;
+    return Array.isArray(embedding) ? embedding : null;
   } catch (err) {
     console.warn('[embeddings] Failed:', err instanceof Error ? err.message : err);
     return null;
@@ -76,9 +77,11 @@ export function cosine(a: number[], b: number[]): number {
   if (a.length !== b.length || a.length === 0) return 0;
   let dot = 0, normA = 0, normB = 0;
   for (let i = 0; i < a.length; i++) {
-    dot   += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
+    const av = a[i] ?? 0;
+    const bv = b[i] ?? 0;
+    dot   += av * bv;
+    normA += av * av;
+    normB += bv * bv;
   }
   const denom = Math.sqrt(normA) * Math.sqrt(normB);
   return denom === 0 ? 0 : dot / denom;

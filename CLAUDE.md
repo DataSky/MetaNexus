@@ -57,21 +57,24 @@ Registry Service    Search Service  Trust Service  Settlement Service
 sdk/
 ├── src/                    # Primary SDK (active development)
 │   ├── index.ts
-│   └── core/               # ✅ Complete — types, crypto, validation
-│       ├── types.ts         # UniversalAgentCard & all types (~470 lines)
-│       ├── crypto.ts        # ed25519 sign/verify (tweetnacl)
-│       ├── validation.ts    # Zod runtime schemas
-│       ├── crypto.test.ts   # 15 tests ✅
-│       └── validation.test.ts # 18 tests ✅
-├── core/                   # @metanexus/core package (mirrors sdk/src/core)
-│   └── src/                # 26 tests ✅ (crypto: 8, core: 18)
-├── discovery/              # 🔲 Phase 1 — search & crawling
-├── trust/                  # 🔲 Phase 2 — Trust Score computation
-├── settlement/             # 🔲 Phase 3 — multi-asset settlement
-└── adapters/               # 🔲 Phase 1 — A2A/MCP/UCP adapters
-server/                     # 🔲 Phase 1 — Hono Registry API
-crawler/                    # 🔲 Phase 1 — Agent discovery crawler
-cli/                        # 🔲 Phase 1 — npx metanexus search "..."
+│   ├── core/               # ✅ Complete — types, crypto, validation
+│   │   ├── types.ts         # UniversalAgentCard & all types (~470 lines)
+│   │   ├── crypto.ts        # ed25519 sign/verify (tweetnacl)
+│   │   ├── validation.ts    # Zod runtime schemas
+│   │   ├── crypto.test.ts   # 15 tests ✅
+│   │   └── validation.test.ts # 18 tests ✅
+│   ├── adapters/           # ✅ Phase 1 — A2A/MCP/AGENTS.md adapters (23 tests)
+│   ├── discovery/          # ✅ Phase 1 — Crawler + semantic search (17 tests)
+│   │   └── trust.test.ts   # Trust Score probing (26 tests) ✅
+│   └── delegation/         # ✅ Phase 2 — TaskIntent→TaskOffer→TaskExecution (27 tests)
+├── core/                   # @metanexus/core package (legacy, mirrors sdk/src/core)
+├── discovery/              # stub
+├── trust/                  # stub
+├── settlement/             # 🔲 Phase 3 — multi-asset settlement (not started)
+└── adapters/               # stub
+server/                     # ✅ Phase 1 — Hono Registry API (17 routes, 228 lines)
+│   └── src/db/             # ✅ PostgreSQL stores — AgentStore + DelegationStore (564 lines)
+cli/                        # ✅ Phase 1 — npx metanexus search (159 lines)
 docs/                       # Design documents (read before implementing)
 ```
 
@@ -104,19 +107,43 @@ MetaD (`../metad/`) is the e-commerce vertical PoC; MetaNexus is the horizontal 
 
 ## Development Phase Status
 
-**Phase 0: Foundation — COMPLETE ✅** (59 tests passing)
+**Phase 0: Foundation — COMPLETE ✅** (33 tests → 59 tests)
+- RFC, Architecture, AgentCard Schema, Settlement design docs ✅
+- SDK core types (UniversalAgentCard, TaskIntent/Offer/Execution) ✅
+- ed25519 crypto (tweetnacl) ✅
+- Zod validation layer ✅
 
-**Phase 1: Discovery MVP — IN PROGRESS 🔲**
-- Protocol Adapters (A2A: crawl `/.well-known/agent.json`, MCP, AGENTS.md)
-- Crawler (given URL list → normalize to UniversalAgentCard)
-- Registry API (Hono)
-- Semantic Search (pgvector embeddings)
-- Basic Trust Score (uptime + response time probing)
-- CLI (`npx metanexus search "..."`)
+**Phase 1: Discovery MVP — COMPLETE ✅** (126 tests total, 2026-03-08)
+- Protocol Adapters (A2A `/.well-known/agent.json`, MCP, AGENTS.md): 23 tests ✅
+- Crawler + Semantic Search (pgvector embeddings): 17 tests ✅
+- Basic Trust Score (uptime + response time probing): 26 tests ✅
+- Registry API (Hono, 17 routes): `/v1/agents`, `/v1/search`, `/v1/crawl`, `/v1/health` ✅
+- CLI (`npx metanexus search "..."`): 159 lines ✅
+- PostgreSQL stores (AgentStore): 191 lines ✅
+- ⚠️ **Blocked**: DMXAPI embedding key 401 — semantic search calls fail in prod; replace key or switch to OpenAI embeddings
+- ⚠️ **Not deployed**: PostgreSQL DB not running; needs Railway setup
 
-**Phase 2: Trust & Delegation** — TaskIntent → TaskOffer → TaskExecution flow, SLA probes, Behavioral Trust Score v2, Stake & Slash (USDC on Base)
+**Phase 2: Trust & Delegation — CORE LOGIC COMPLETE ✅, Stake/Slash pending**
+- TaskIntent → TaskOffer → TaskExecution delegation flow: 27 tests ✅
+- PostgreSQL-backed DelegationStore (intents/offers/executions tables): 270 lines ✅
+- ❌ SLA Probes: not implemented
+- ❌ Stake & Slash (USDC on Base): not implemented
 
-**Phase 3: Compute Settlement** — SOTA Index pipeline, Model Quota Swap protocol, multi-asset Escrow, dynamic pricing
+**Phase 3: Compute Settlement — NOT STARTED ❌**
+- SOTA Index pipeline
+- Model Quota Swap protocol (core innovation)
+- Multi-asset Escrow
+- Dynamic pricing based on SOTA leaderboard
+
+## Immediate Next Steps (Priority Order)
+
+1. **Fix embeddings** — Replace DMXAPI key or switch to OpenAI `text-embedding-3-small`
+2. **Deploy PostgreSQL** — Railway PostgreSQL + run `docs/schema.sql` (or create it if missing)
+3. **End-to-end smoke test** — Start server, register an agent, search, crawl a real URL
+4. **Phase 2: SLA Probes** — Periodic HTTP probing of registered agents → feed into Trust Score
+5. **Phase 2: Stake & Slash** — USDC on Base via x402 (reference `../metad/sdk/src/x402/`)
+6. **Phase 3: SOTA Index** — Fetch LMSYS/OpenLLM leaderboard data, map model → score
+7. **Phase 3: Model Quota Swap** — Core protocol: swap intents, escrow, settle
 
 ## Code Conventions
 

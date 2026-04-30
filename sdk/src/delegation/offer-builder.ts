@@ -62,7 +62,6 @@ export class OfferBuilder {
       validUntil,
       nonce: generateNonce(),
       timestamp: now,
-      signature: '',
     };
 
     const signature = sign(offer as Record<string, unknown>, this.config.secretKey);

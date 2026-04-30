@@ -51,8 +51,12 @@ export class AgentRegistry {
     return this.agents.delete(id);
   }
 
-  list(): UniversalAgentCard[] {
-    return Array.from(this.agents.values()).map(e => e.card);
+  list(limit = 1000, offset = 0): UniversalAgentCard[] {
+    return Array.from(this.agents.values()).map(e => e.card).slice(offset, offset + limit);
+  }
+
+  count(): number {
+    return this.agents.size;
   }
 
   get size(): number {
@@ -61,12 +65,16 @@ export class AgentRegistry {
 
   /**
    * Semantic + keyword search.
-   *
-   * If a query embedding is provided (precomputed externally), uses cosine
-   * similarity for agents that have embeddings and keyword fallback for the rest.
-   * Otherwise falls back entirely to keyword overlap scoring.
+   * Auto-computes query embedding when DMXAPI_KEY is set.
+   * Falls back to keyword overlap when no embedding available.
    */
-  search(query: SearchQuery, queryEmbedding?: number[] | null): SearchResult[] {
+  async search(query: SearchQuery): Promise<SearchResult[]> {
+    const queryEmbedding = await getEmbedding(query.query);
+    return this._searchSync(query, queryEmbedding);
+  }
+
+  /** Synchronous keyword search (used internally + in tests via mock) */
+  _searchSync(query: SearchQuery, queryEmbedding?: number[] | null): SearchResult[] {
     const terms = query.query.toLowerCase().split(/\s+/).filter(Boolean);
     const filters = query.filters ?? {};
     // Semantic mode needs a higher minimum to filter noise from embedding space.

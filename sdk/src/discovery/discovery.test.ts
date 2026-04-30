@@ -153,42 +153,42 @@ describe('AgentRegistry', () => {
     expect(registry.get(MOCK_CARD.id)).toBeUndefined();
   });
 
-  it('search() finds by keyword in name', () => {
+  it('search() finds by keyword in name', async () => {
     registry.register(MOCK_CARD);
-    const results = registry.search({ query: 'Example' });
+    const results = await registry.search({ query: 'Example' });
     expect(results).toHaveLength(1);
     expect(results[0].agent.id).toBe(MOCK_CARD.id);
   });
 
-  it('search() finds by keyword in description', () => {
+  it('search() finds by keyword in description', async () => {
     registry.register(MOCK_CARD);
-    const results = registry.search({ query: 'crawling' });
+    const results = await registry.search({ query: 'crawling' });
     expect(results).toHaveLength(1);
   });
 
-  it('search() finds by keyword in capability name', () => {
+  it('search() finds by keyword in capability name', async () => {
     registry.register(MOCK_CARD);
-    const results = registry.search({ query: 'search' });
+    const results = await registry.search({ query: 'search' });
     expect(results).toHaveLength(1);
   });
 
-  it('search() returns empty for no match', () => {
+  it('search() returns empty for no match', async () => {
     registry.register(MOCK_CARD);
-    const results = registry.search({ query: 'nonexistent_xyz' });
+    const results = await registry.search({ query: 'nonexistent_xyz' });
     expect(results).toHaveLength(0);
   });
 
-  it('search() filters by tag', () => {
+  it('search() filters by tag', async () => {
     const taggedCard = { ...MOCK_CARD, id: 'a2a:tagged.com', tags: ['finance'] };
     registry.register(MOCK_CARD);
     registry.register(taggedCard);
 
-    const results = registry.search({ query: 'agent', filters: { tags: ['finance'] } });
+    const results = await registry.search({ query: 'agent', filters: { tags: ['finance'] } });
     expect(results).toHaveLength(1);
     expect(results[0].agent.id).toBe('a2a:tagged.com');
   });
 
-  it('search() sorts by overallScore descending', () => {
+  it('search() sorts by overallScore descending', async () => {
     const perfectMatch = {
       ...MOCK_CARD,
       id: 'a2a:perfect.com',
@@ -199,16 +199,16 @@ describe('AgentRegistry', () => {
     registry.register(perfectMatch);
     registry.register(weakMatch);
 
-    const results = registry.search({ query: 'search' });
+    const results = await registry.search({ query: 'search' });
     expect(results[0].agent.id).toBe('a2a:perfect.com');
   });
 
-  it('search() respects limit and offset', () => {
+  it('search() respects limit and offset', async () => {
     for (let i = 0; i < 5; i++) {
       registry.register({ ...MOCK_CARD, id: `a2a:agent${i}.com` });
     }
-    const page1 = registry.search({ query: 'Example', filters: { limit: 2, offset: 0 } });
-    const page2 = registry.search({ query: 'Example', filters: { limit: 2, offset: 2 } });
+    const page1 = await registry.search({ query: 'Example', filters: { limit: 2, offset: 0 } });
+    const page2 = await registry.search({ query: 'Example', filters: { limit: 2, offset: 2 } });
     expect(page1).toHaveLength(2);
     expect(page2).toHaveLength(2);
     expect(page1[0].agent.id).not.toBe(page2[0].agent.id);

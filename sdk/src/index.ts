@@ -11,4 +11,4 @@ export * from './delegation/index.js';
 
 // Re-export sub-packages when implemented
 // export * from './trust/index.js';
-// export * from './settlement/index.js';
+export * from './settlement/index.js';

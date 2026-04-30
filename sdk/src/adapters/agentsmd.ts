@@ -64,7 +64,7 @@ export function parseAgentsMd(markdown: string): ParsedAgentsMd {
   }
 
   for (i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const line = lines[i] ?? '';
 
     // H1 = agent name
     if (line.startsWith('# ') && !name) {
@@ -75,13 +75,14 @@ export function parseAgentsMd(markdown: string): ParsedAgentsMd {
     // Version hint (e.g. "version: 1.2.0" or "**version**: 1.2.0")
     const versionMatch = line.match(/version[:\s]+([0-9]+\.[0-9]+\.[0-9]+)/i);
     if (versionMatch) {
-      version = versionMatch[1];
+      version = versionMatch[1] ?? version;
     }
 
     // Tags hint (e.g. "tags: foo, bar, baz")
     const tagsMatch = line.match(/^tags?[:\s]+(.+)/i);
     if (tagsMatch) {
-      tags.push(...tagsMatch[1].split(',').map(t => t.trim()).filter(Boolean));
+      const tagList = tagsMatch[1] ?? '';
+      tags.push(...tagList.split(',').map(t => t.trim()).filter(Boolean));
     }
 
     // First non-empty paragraph after H1 = description
