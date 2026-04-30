@@ -6,6 +6,7 @@
 
 export * from './core/index.js';
 export * from './discovery/index.js';
+export * from './discovery/trust-ledger.js';
 export * from './adapters/index.js';
 export * from './delegation/index.js';
 

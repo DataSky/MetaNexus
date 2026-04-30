@@ -7,6 +7,7 @@ import { Hono } from 'hono';
 import { AgentRegistry } from '../../sdk/src/discovery/registry.js';
 import { Crawler } from '../../sdk/src/discovery/crawler.js';
 import { probeAndScore } from '../../sdk/src/discovery/trust.js';
+import { TrustLedger } from '../../sdk/src/discovery/trust-ledger.js';
 import { DelegationStore } from '../../sdk/src/delegation/store.js';
 import { RegisterAgentCardSchema } from '../../sdk/src/core/validation.js';
 import { TaskIntentSchema, TaskOfferSchema } from '../../sdk/src/core/validation.js';
@@ -17,6 +18,8 @@ import type { IAgentStore, IDelegationStore } from './db/interfaces.js';
 // Shared SOTA index and swap book (in-memory for MVP)
 const sotaIndex = createSOTAIndex();
 const swapBook = new InMemorySwapBook();
+// Shared trust ledger — updated on every terminal execution
+const trustLedger = new TrustLedger();
 
 export function createApp(
   registry: IAgentStore = new AgentRegistry(),
@@ -221,12 +224,60 @@ export function createApp(
 
     try {
       const execution = await delegation.executions.update(c.req.param('id'), body);
+
+      // On terminal status: update trust ledger for the provider
+      if (execution.status === 'completed' || execution.status === 'failed' || execution.status === 'disputed') {
+        const offer = await delegation.offers.get(execution.offerId);
+        const intent = offer ? await delegation.intents.get(offer.intentId) : null;
+        if (offer && intent) {
+          const outcome = TrustLedger.fromExecution(
+            execution,
+            offer.providerAgentId,
+            intent.intent.clientAgentId,
+          );
+          if (outcome) {
+            const newScore = trustLedger.record(outcome);
+            // Persist updated trust score back to registry
+            const card = await registry.get(offer.providerAgentId);
+            if (card) {
+              await registry.register({
+                ...card,
+                trust: {
+                  ...newScore,
+                  totalTransactions: trustLedger.getHistory(offer.providerAgentId)?.outcomes.length ?? 0,
+                  disputeRate: outcome.status === 'disputed' ? 1 : 0,
+                },
+              });
+            }
+          }
+        }
+      }
+
       return c.json(execution);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const status = msg.includes('not found') ? 404 : 409;
       return c.json({ error: msg }, status);
     }
+  });
+
+  /** GET /v1/trust/leaderboard — agents ranked by execution-based trust score */
+  app.get('/v1/trust/leaderboard', c => {
+    return c.json({ leaderboard: trustLedger.leaderboard() });
+  });
+
+  /** GET /v1/trust/:agentId — execution history trust score for an agent */
+  app.get('/v1/trust/:agentId', c => {
+    const agentId = decodeURIComponent(c.req.param('agentId'));
+    const score = trustLedger.getScore(agentId);
+    if (!score) return c.json({ error: 'No execution history for this agent' }, 404);
+    const history = trustLedger.getHistory(agentId);
+    return c.json({
+      agentId,
+      score,
+      totalTransactions: history?.outcomes.length ?? 0,
+      lastUpdated: history?.lastUpdated,
+    });
   });
 
   // ---- Quota Swap ----------------------------------------------------------
