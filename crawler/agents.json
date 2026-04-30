@@ -1,0 +1,280 @@
+{
+  "generatedAt": "2026-04-30T13:28:59.263Z",
+  "count": 5,
+  "agents": [
+    {
+      "id": "https://translate.agent.metanexus.demo",
+      "name": "TranslateAgent",
+      "description": "Multilingual translation agent supporting 50+ languages via GPT-4 and DeepL.",
+      "version": "1.2.0",
+      "capabilities": [
+        {
+          "id": "translate",
+          "name": "Translate",
+          "description": "Translate text between languages"
+        },
+        {
+          "id": "detect_language",
+          "name": "Detect Language",
+          "description": "Identify source language"
+        }
+      ],
+      "protocols": [
+        {
+          "protocol": "a2a",
+          "version": "0.2",
+          "endpoint": "https://translate.agent.metanexus.demo"
+        }
+      ],
+      "endpoint": "https://translate.agent.metanexus.demo",
+      "publicKey": "",
+      "domain": "translate.agent.metanexus.demo",
+      "tags": [
+        "translation",
+        "nlp",
+        "multilingual"
+      ],
+      "created": "2026-04-30T13:28:59.262Z",
+      "updated": "2026-04-30T13:28:59.262Z",
+      "signature": "",
+      "trust": {
+        "score": 0.92,
+        "confidence": "high",
+        "breakdown": {
+          "reliability": 0.99,
+          "quality": 0.97,
+          "timeliness": 0.9,
+          "tenure": 0.8,
+          "stake": 0
+        },
+        "totalTransactions": 1240,
+        "disputeRate": 0.002
+      }
+    },
+    {
+      "id": "https://summarize.agent.metanexus.demo",
+      "name": "SummarizeAgent",
+      "description": "Document summarization agent. Handles PDFs, web pages, and long-form text.",
+      "version": "2.0.1",
+      "capabilities": [
+        {
+          "id": "summarize",
+          "name": "Summarize",
+          "description": "Generate concise summaries"
+        },
+        {
+          "id": "extract_key_points",
+          "name": "Extract Key Points",
+          "description": "Bullet-point extraction"
+        }
+      ],
+      "protocols": [
+        {
+          "protocol": "a2a",
+          "version": "0.2",
+          "endpoint": "https://summarize.agent.metanexus.demo"
+        }
+      ],
+      "endpoint": "https://summarize.agent.metanexus.demo",
+      "publicKey": "",
+      "domain": "summarize.agent.metanexus.demo",
+      "tags": [
+        "summarization",
+        "nlp",
+        "document"
+      ],
+      "created": "2026-04-30T13:28:59.262Z",
+      "updated": "2026-04-30T13:28:59.262Z",
+      "signature": "",
+      "trust": {
+        "score": 0.88,
+        "confidence": "high",
+        "breakdown": {
+          "reliability": 0.97,
+          "quality": 0.94,
+          "timeliness": 0.9,
+          "tenure": 0.8,
+          "stake": 0
+        },
+        "totalTransactions": 876,
+        "disputeRate": 0.005
+      }
+    },
+    {
+      "id": "https://code-review.agent.metanexus.demo",
+      "name": "CodeReviewAgent",
+      "description": "Automated code review agent. Supports TypeScript, Python, Go, and Rust.",
+      "version": "1.0.4",
+      "capabilities": [
+        {
+          "id": "review_code",
+          "name": "Review Code",
+          "description": "Static analysis + AI review"
+        },
+        {
+          "id": "suggest_fixes",
+          "name": "Suggest Fixes",
+          "description": "Actionable fix suggestions"
+        },
+        {
+          "id": "security_scan",
+          "name": "Security Scan",
+          "description": "OWASP vulnerability detection"
+        }
+      ],
+      "protocols": [
+        {
+          "protocol": "a2a",
+          "version": "0.2",
+          "endpoint": "https://code-review.agent.metanexus.demo"
+        },
+        {
+          "protocol": "mcp",
+          "version": "1.0",
+          "endpoint": "https://code-review.agent.metanexus.demo/mcp"
+        }
+      ],
+      "endpoint": "https://code-review.agent.metanexus.demo",
+      "publicKey": "",
+      "domain": "code-review.agent.metanexus.demo",
+      "tags": [
+        "code",
+        "review",
+        "security",
+        "typescript",
+        "python"
+      ],
+      "created": "2026-04-30T13:28:59.262Z",
+      "updated": "2026-04-30T13:28:59.262Z",
+      "signature": "",
+      "trust": {
+        "score": 0.95,
+        "confidence": "high",
+        "breakdown": {
+          "reliability": 0.995,
+          "quality": 0.98,
+          "timeliness": 0.9,
+          "tenure": 0.8,
+          "stake": 0
+        },
+        "totalTransactions": 3420,
+        "disputeRate": 0.001
+      }
+    },
+    {
+      "id": "https://data-analyst.agent.metanexus.demo",
+      "name": "DataAnalystAgent",
+      "description": "Structured data analysis agent. Accepts CSV/JSON, generates charts and insights.",
+      "version": "1.1.0",
+      "capabilities": [
+        {
+          "id": "analyze_data",
+          "name": "Analyze Data",
+          "description": "Statistical analysis and insights"
+        },
+        {
+          "id": "visualize",
+          "name": "Visualize",
+          "description": "Generate charts and dashboards"
+        },
+        {
+          "id": "forecast",
+          "name": "Forecast",
+          "description": "Time-series forecasting"
+        }
+      ],
+      "protocols": [
+        {
+          "protocol": "a2a",
+          "version": "0.2",
+          "endpoint": "https://data-analyst.agent.metanexus.demo"
+        }
+      ],
+      "endpoint": "https://data-analyst.agent.metanexus.demo",
+      "publicKey": "",
+      "domain": "data-analyst.agent.metanexus.demo",
+      "tags": [
+        "data",
+        "analytics",
+        "visualization",
+        "forecasting"
+      ],
+      "created": "2026-04-30T13:28:59.262Z",
+      "updated": "2026-04-30T13:28:59.262Z",
+      "signature": "",
+      "trust": {
+        "score": 0.85,
+        "confidence": "high",
+        "breakdown": {
+          "reliability": 0.96,
+          "quality": 0.91,
+          "timeliness": 0.9,
+          "tenure": 0.8,
+          "stake": 0
+        },
+        "totalTransactions": 542,
+        "disputeRate": 0.008
+      }
+    },
+    {
+      "id": "https://search.agent.metanexus.demo",
+      "name": "WebSearchAgent",
+      "description": "Real-time web search agent with source verification and citation.",
+      "version": "3.0.0",
+      "capabilities": [
+        {
+          "id": "search",
+          "name": "Search",
+          "description": "Web search with ranking"
+        },
+        {
+          "id": "verify_sources",
+          "name": "Verify Sources",
+          "description": "Fact-check and cite sources"
+        },
+        {
+          "id": "news_monitor",
+          "name": "News Monitor",
+          "description": "Real-time news tracking"
+        }
+      ],
+      "protocols": [
+        {
+          "protocol": "a2a",
+          "version": "0.2",
+          "endpoint": "https://search.agent.metanexus.demo"
+        },
+        {
+          "protocol": "mcp",
+          "version": "1.0",
+          "endpoint": "https://search.agent.metanexus.demo/mcp"
+        }
+      ],
+      "endpoint": "https://search.agent.metanexus.demo",
+      "publicKey": "",
+      "domain": "search.agent.metanexus.demo",
+      "tags": [
+        "search",
+        "web",
+        "news",
+        "research"
+      ],
+      "created": "2026-04-30T13:28:59.262Z",
+      "updated": "2026-04-30T13:28:59.262Z",
+      "signature": "",
+      "trust": {
+        "score": 0.9,
+        "confidence": "high",
+        "breakdown": {
+          "reliability": 0.98,
+          "quality": 0.95,
+          "timeliness": 0.9,
+          "tenure": 0.8,
+          "stake": 0
+        },
+        "totalTransactions": 8900,
+        "disputeRate": 0.003
+      }
+    }
+  ]
+}
